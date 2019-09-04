@@ -16,7 +16,7 @@ Here the user can alter the results with +- hydropathy error value.
 usage: Hydrophobicity.py [-h] [-w SIZE] [-e ERROR] [-n OUTPUT_SIZE]
                          input_reference input_test output
 
-[-w Size] : modifies the size of interest for the windows
+[-w Size] : modifies the size of interest for the windows \n
 [-e Error] : modifies the error range when matching areas with the preestablished sequences
 [-n Output_Size] : modifies the number of sequences desired from the output
 
