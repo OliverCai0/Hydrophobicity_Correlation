@@ -1,3 +1,4 @@
+#Modules Needed
 import Bio
 import numpy as np 
 import matplotlib.pyplot as plt
@@ -12,19 +13,21 @@ import matplotlib.pyplot as plt
 import os
 import argparse
 
+#The hydropathy scale used
 kyle_doolittle = {'A' : 1.8, 'C' : 2.5, 'D' : -3.5, 'E' : -3.5, 'F' : 2.8, 'G' : -0.4, 
                   'H' : -3.2, 'I' : 4.5, 'K' : -3.90, 'L' : 3.8, 'M' : 1.9, 'N' : -3.5,
                   'P' : -1.6, 'Q' : -3.5, 'R' : -4.5, 'S' : -0.8, 'T': -0.7, 'V' : 4.2, 
                   'W' : -0.9, 'Y' : -1.3}
 
-def filter_profiles(profile):
+#Various Methods needed
+def filter_profiles(profile): #Filters the length of the area of interest
     new_profile = []
     for x in profile:
         if len(x) > args.size:
             new_profile.append(x)
     return new_profile
 
-def generate_region_average(profile):
+def generate_region_average(profile): #Generates an average based on the area of interest
     avg_profile = []
     for x in profile:
         yvalues = []
@@ -34,7 +37,7 @@ def generate_region_average(profile):
     return avg_profile
 
 ##([minx1,maxx1],[minx1,maxx2])
-def majority_overlap(xrange1,xrange2):
+def majority_overlap(xrange1,xrange2): #Catches any potential overlaps to keep stuff from repeating
     xray1 = range(xrange1[0],xrange1[1] + 1)
     xray2 = range(xrange2[0],xrange2[1] + 1)
     if xray1 in xray2:
@@ -69,7 +72,7 @@ def mysort(col1,col2):
                 col2_c = col2_c[1:]
     return ncol
 
-def compilation(all_trends):
+def compilation(all_trends): #Analyzes the collection of regions and their averages to produce a min and max for each region
     finished_analysis = []
     region_analyzed = []
     one_trend = []
@@ -79,6 +82,7 @@ def compilation(all_trends):
             region_analyzed = all_trends[0][2]
             one_trend.append(all_trends[count][1])
             count = count + 1
+        #Makes sure that a region only contains averages that are either all positive or negative
         elif majority_overlap(all_trends[count][2],region_analyzed) and (all_trends[count][1] > 0) and (one_trend[0] > 0):
             one_trend.append(all_trends[count][1])
             count = count + 1
@@ -94,7 +98,7 @@ def compilation(all_trends):
     return finished_analysis
 
 
-def create_cors(h_plot,window_mid):
+def create_cors(h_plot,window_mid): #Sets coordinates in a format to work with
     xcor = window_mid
     cors = []
     for y in h_plot:
@@ -102,7 +106,9 @@ def create_cors(h_plot,window_mid):
         xcor = xcor + 1
     return cors
 
-def analyze_profile(cors,profile=[]):
+def analyze_profile(cors,profile=[]): 
+    #Creates a "profile" for each sequence 
+    #consisting of the range of positions, values, and hydropathy
     if len(cors) == 0:
         return profile
     a_profile = [cors[0]]
@@ -151,6 +157,7 @@ parser.add_argument('-o','--overlap',type=int,default=5,help='The amount of posi
 
 args = parser.parse_args()
 
+#Parsing the preestablished sequences
 for record in SeqIO.parse(args.input_reference,'fasta'):
     seq_record.append(str(record.seq))
     seq_names.append(str(record.id))
@@ -165,13 +172,15 @@ for index in range(len(seq_names)):
 all_trends = []
 s_regions = []
 
+#Generates Average for preestablished data
 for index in range(len(seq_analysis)):
     a = generate_region_average(filter_profiles(analyze_profile(create_cors(seq_analysis[index],4),[])))
     s_regions.append(a)
 
 for index in range(len(s_regions)):
     all_trends = mysort(s_regions[index],all_trends)
-    
+
+#Lists used to record the data   
 new_seq_record = []
 new_seq_names = []
 new_seq_analysis = []
@@ -179,6 +188,7 @@ new_seq_descr = []
 new_s_regions = []
 all_correlation = []
 
+#parsing for the test sequences
 for record in SeqIO.parse(args.input_test,'fasta'):
     new_seq_record.append(str(record.seq))
     new_seq_names.append(str(record.id))
@@ -192,12 +202,13 @@ for index in range(len(new_seq_names)):
 for index in range(len(new_seq_analysis)):
     a = generate_region_average(filter_profiles(analyze_profile(create_cors(new_seq_analysis[index],4),[])))
     new_s_regions.append(a)
-    
+
 compared = compilation(all_trends)
 for sequence in new_s_regions:
-    #Gets each indiviual sequence data
+    #Gets each indiviual sequence test data
     seq_correlation = []
     for input_region in sequence:
+        #Tries to match it with a region in the preestablished data
         for profile_region in compared:
             if profile_region[0][0] > input_region[2][1]:
                 seq_correlation.append('Not Matched')
@@ -209,20 +220,24 @@ for sequence in new_s_regions:
             
 seq_correlations = []
 
+#Counts the correlations
 for index in range(len(new_seq_names)):
     print(new_seq_names[index])
     seq_correlation = 0
     for index2 in range(len(all_correlation[index])):
         if (all_correlation[index][index2] == 'Match'):
             seq_correlation = seq_correlation + 1
+            #Prints out specific region correlations
             if args.view_more:
                 print('Match at windows ' + str(new_s_regions[index][index2][2]))
     print('Overall correlation = ' + str(seq_correlation/len(new_s_regions[index])))
     seq_correlations.append(([index,seq_correlation/len(all_correlation[index])]))
 
+#Filters out the best correlated sequences
 seq_correlations = Nmaxelements(seq_correlations,args.output_size)
 final_output = []
 for index in range(len(seq_correlations)):
+    #Writes them onto a FASTA file
    final_output.append(SeqRecord(Seq(new_seq_record[seq_correlations[index][0]], generic_protein), 
                                      id = new_seq_names[seq_correlations[index][0]], 
                                      description = new_seq_descr[seq_correlations[index][0]]))
