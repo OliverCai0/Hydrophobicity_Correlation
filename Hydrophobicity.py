@@ -43,7 +43,7 @@ def majority_overlap(xrange1,xrange2):
         return True
     else:
         lst3 = [value for value in xray1 if value in xray2] 
-        if (len(lst3) > (.5 * len(xray1))) or (len(lst3) > (.5 * len(xray2))):
+        if (len(lst3) > args.overlap):
             return True
         else:
             return False
@@ -69,30 +69,30 @@ def mysort(col1,col2):
                 col2_c = col2_c[1:]
     return ncol
 
-def compilation(all_trends,finished_analysis):
+def compilation(all_trends):
+    finished_analysis = []
+    region_analyzed = []
+    one_trend = []
     count = 0
-    if len(all_trends) == 0:
-        return finished_analysis
-    #min,max,average
-    pca = [all_trends[0][2]]
-    nca = [all_trends[0][2]]
-    for index in range(len(all_trends)):
-        if majority_overlap(pca[0],all_trends[index][2]):
-            if all_trends[index][0]:
-                pca.append(all_trends[index][1])
-                count = count + 1
-            else:
-                nca.append(all_trends[index][1])
-                count = count + 1
+    while len(all_trends) != count:
+        if len(one_trend) == 0:
+            region_analyzed = all_trends[0][2]
+            one_trend.append(all_trends[count][1])
+            count = count + 1
+        elif majority_overlap(all_trends[count][2],region_analyzed) and (all_trends[count][1] > 0) and (one_trend[0] > 0):
+            one_trend.append(all_trends[count][1])
+            count = count + 1
+        elif majority_overlap(all_trends[count][2],region_analyzed) and (all_trends[count][1] < 0) and (one_trend[0] < 0):
+            one_trend.append(all_trends[count][1])
+            count = count + 1
         else:
-            break
-    if (len(pca) > 2):
-        pca = [pca[0],min(pca[1:]),max(pca[1:])]
-        finished_analysis.append(pca)
-    if (len(nca) > 2):
-        nca = [nca[0],min(nca[1:]),max(nca[1:])]
-        finished_analysis.append(nca)
-    return compilation(all_trends[count:],finished_analysis)
+            all_trends = all_trends[count:]
+            count = 0
+            finished_analysis.append([region_analyzed,min(one_trend),max(one_trend)])
+            one_trend = []
+            region_analyzed = []
+    return finished_analysis
+
 
 def create_cors(h_plot,window_mid):
     xcor = window_mid
@@ -146,6 +146,8 @@ parser.add_argument('output',type=str,help='Output FASTA file')
 parser.add_argument('-w','--size',type=int,default=7,help='Filtering out the regions lengths to be analyzed')
 parser.add_argument('-e','--error',type=float,default=.1,help='The error range')
 parser.add_argument('-n','--output_size',type=int,default=5,help='The number of sequences desired')
+parser.add_argument('-v','--view_more',type=bool,default=False,help='Toggles additional information about matched areas')
+parser.add_argument('-o','--overlap',type=int,default=5,help='The amount of positions defined as overlapping')
 
 args = parser.parse_args()
 
@@ -191,7 +193,7 @@ for index in range(len(new_seq_analysis)):
     a = generate_region_average(filter_profiles(analyze_profile(create_cors(new_seq_analysis[index],4),[])))
     new_s_regions.append(a)
     
-compared = compilation(all_trends,[])
+compared = compilation(all_trends)
 for sequence in new_s_regions:
     #Gets each indiviual sequence data
     seq_correlation = []
@@ -213,8 +215,9 @@ for index in range(len(new_seq_names)):
     for index2 in range(len(all_correlation[index])):
         if (all_correlation[index][index2] == 'Match'):
             seq_correlation = seq_correlation + 1
-            print('Match at windows ' + str(new_s_regions[index][index2][2]))
-    print('Overall correlation = ' + str(seq_correlation/len(all_correlation[index])))
+            if args.view_more:
+                print('Match at windows ' + str(new_s_regions[index][index2][2]))
+    print('Overall correlation = ' + str(seq_correlation/len(new_s_regions[index])))
     seq_correlations.append(([index,seq_correlation/len(all_correlation[index])]))
 
 seq_correlations = Nmaxelements(seq_correlations,args.output_size)
