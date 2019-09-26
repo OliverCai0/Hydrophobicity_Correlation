@@ -14,7 +14,7 @@ Here the user can alter the results with +- hydropathy error value.
 5. The program then filters out the sequences with the best correlation value and outputs them onto a FASTA file.
 
 usage: Hydrophobicity.py [-h] [-w SIZE] [-e ERROR] [-n OUTPUT_SIZE]
-                         [-v VIEW_MORE] [-o OVERLAP]
+                         [-v VIEW_MORE] [-o OVERLAP] [-g GRAPH]
                          input_reference input_test output
 
 [-w Size] : modifies the size of interest for the windows (default is 7) -- potenitally needs to be modified in case sample size is too low
@@ -26,6 +26,8 @@ usage: Hydrophobicity.py [-h] [-w SIZE] [-e ERROR] [-n OUTPUT_SIZE]
 [-v VIEW_MORE] : Lets you see the matched up areas
 
 [-o Overlap] : Let's you modify the overlapping setting (default is 5 positions)
+
+[-g GRAPH] : Graphs test sequences and a compilation of all reference sequences
 
 input_reference: FASTA file format - a collection of sequences used to establish valid areas of interest and their hydropathy ranges to measure correlation.
 
