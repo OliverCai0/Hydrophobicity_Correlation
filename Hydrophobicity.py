@@ -154,6 +154,7 @@ parser.add_argument('-e','--error',type=float,default=.1,help='The error range')
 parser.add_argument('-n','--output_size',type=int,default=5,help='The number of sequences desired')
 parser.add_argument('-v','--view_more',type=bool,default=False,help='Toggles additional information about matched areas')
 parser.add_argument('-o','--overlap',type=int,default=5,help='The amount of positions defined as overlapping')
+parser.add_argument('-g','--graph',type=bool,default=False,help='Toggles the creation of a folder with images of the hydropathy graphs')
 
 args = parser.parse_args()
 
@@ -244,6 +245,25 @@ for index in range(len(seq_correlations)):
         
 SeqIO.write(final_output,args.output,'fasta')
 
+if args.graph:
+    plt.figure(figsize=(24,6))
+    os.mkdir(args.input_test.replace('.fasta','') + '_Separate_Graphs')
+    os.chdir(args.input_test.replace('.fasta','') + '_Separate_Graphs')
+    plt.ylabel('Hydrophobicity')
+    plt.xlabel('Position')
+    for index in range(len(new_seq_analysis)):
+        x_axis = range(len(new_seq_analysis[index]))
+        plt.clf()
+        plt.title(new_seq_names[index] + ' Hydrophobicity')
+        plt.plot(x_axis,new_seq_analysis[index])
+        plt.savefig(new_seq_names[index] + '_hyd.png')
+    plt.clf()
+    plt.title = 'Original Reference Hydrophobicity'
+    x_axis = range(len(seq_analysis[1]))
+    for x in seq_analysis:
+        plt.plot(x_axis,x)
+    plt.savefig('Original_reference')
+        
 
 
 
